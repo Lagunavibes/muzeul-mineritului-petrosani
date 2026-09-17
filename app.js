@@ -1,61 +1,55 @@
-(() => {
-  const root = document.documentElement;
-  const nav = document.getElementById("nav") || document.getElementById("site-nav");
-  const toggle = document.querySelector(".nav-toggle");
-  const langBtn = document.querySelector("button.lang");
-  const form = document.getElementById("mail-form");
+(function () {
+  const nav = document.getElementById("nav");
+  const menuBtn = document.getElementById("menuBtn");
+  const langBtn = document.getElementById("langBtn");
+  const storageKey = "mmp-lang";
 
-  const saved = localStorage.getItem("muzeu-lang");
-  const start = saved === "en" || saved === "ro" ? saved : "ro";
-  setLang(start);
-
-  langBtn?.addEventListener("click", () => {
-    setLang(root.lang === "ro" ? "en" : "ro");
-  });
-
-  toggle?.addEventListener("click", () => {
-    const open = nav?.classList.toggle("open");
-    toggle.setAttribute("aria-expanded", String(!!open));
-  });
-
-  nav?.querySelectorAll("a").forEach((a) => {
-    a.addEventListener("click", () => {
-      nav.classList.remove("open");
-      toggle?.setAttribute("aria-expanded", "false");
+  function applyLang(lang) {
+    const use = lang === "en" ? "en" : "ro";
+    document.documentElement.lang = use;
+    document.querySelectorAll("[data-ro][data-en]").forEach((el) => {
+      const value = el.getAttribute(use === "en" ? "data-en" : "data-ro") || "";
+      if (value.indexOf("<br") !== -1) el.innerHTML = value;
+      else el.textContent = value;
     });
-  });
-
-  form?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = new FormData(form);
-    const name = String(data.get("name") || "").trim();
-    const email = String(data.get("email") || "").trim();
-    const message = String(data.get("message") || "").trim();
-    const subject =
-      root.lang === "en"
-        ? "Petroșani Mining Museum"
-        : "Muzeul Mineritului Petroșani";
-    const body = `${name} <${email}>\n\n${message}`;
-    const url =
-      "mailto:primarie@primariapetrosani.ro" +
-      "?subject=" + encodeURIComponent(subject) +
-      "&body=" + encodeURIComponent(body);
-    window.location.href = url;
-  });
-
-  function setLang(lang) {
-    root.lang = lang;
-    localStorage.setItem("muzeu-lang", lang);
-    if (langBtn) {
-      langBtn.textContent = lang === "ro" ? "EN" : "RO";
-      langBtn.setAttribute(
-        "aria-label",
-        lang === "ro" ? "Switch to English" : "Comută în română"
-      );
-    }
-    document.title =
-      lang === "en"
-        ? "Petroșani Mining Museum — Jiu Valley"
-        : "Muzeul Mineritului din Petroșani — Valea Jiului";
+    if (langBtn) langBtn.textContent = use === "en" ? "RO" : "EN";
+    try { localStorage.setItem(storageKey, use); } catch (e) {}
   }
+
+  function currentLang() {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved === "en" || saved === "ro") return saved;
+    } catch (e) {}
+    return "ro";
+  }
+
+  applyLang(currentLang());
+
+  langBtn?.addEventListener("click", function () {
+    applyLang(document.documentElement.lang === "en" ? "ro" : "en");
+  });
+
+  function closeMenu() {
+    nav?.classList.remove("open");
+    menuBtn?.setAttribute("aria-expanded", "false");
+  }
+
+  menuBtn?.addEventListener("click", function () {
+    const open = nav?.classList.toggle("open");
+    menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+
+  nav?.querySelectorAll("a").forEach((a) => a.addEventListener("click", closeMenu));
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeMenu();
+  });
+
+  document.addEventListener("click", function (e) {
+    if (!nav || !menuBtn) return;
+    if (!nav.classList.contains("open")) return;
+    if (nav.contains(e.target) || menuBtn.contains(e.target)) return;
+    closeMenu();
+  });
 })();
